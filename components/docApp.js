@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { ethers } from 'ethers';
 import styles from '../styles/DocApp.module.css';
@@ -29,8 +29,16 @@ const DocApp = () => {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [ipfsHash, setIpfsHash] = useState('');
   const [previewImage, setPreviewImage] = useState('');
-  const [tokenId, setTokenId] = useState(''); // Nouveau state pour le token ID
-    
+  const [tokenId, setTokenId] = useState('');
+  const [documentHistory, setDocumentHistory] = useState([]);
+
+  useEffect(() => {
+    const storedDocuments = JSON.parse(localStorage.getItem('documentHistory'));
+    if (storedDocuments) {
+      setDocumentHistory(storedDocuments);
+    }
+  }, []);
+
   const handleFileSelection = (event) => {
     const files = Array.from(event.target.files);
     setSelectedFiles(files);
@@ -46,12 +54,12 @@ const DocApp = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
+
     if (selectedFiles.length > 0) {
       const file = selectedFiles[0];
       const formData = new FormData();
       formData.append('file', file);
-  
+
       try {
         const response = await axios({
           method: 'post',
@@ -63,22 +71,21 @@ const DocApp = () => {
             'Content-Type': 'multipart/form-data',
           },
         });
-  
+
         const cid = response.data.IpfsHash;
+        const Url=`https://ipfs.io/ipfs/${cid}`;
         console.log('CID:', cid);
         setIpfsHash(cid);
-        
-        // Mise à jour de nftJson pour inclure le nouveau CID de l'image
+
         const updatedNftJson = {
           ...nftJson,
           image: `https://ipfs.io/ipfs/${cid}`,
         };
         setNftJson(updatedNftJson);
 
-        // Envoi du JSON de NFT à IPFS
         const metadataFormData = new FormData();
         metadataFormData.append('file', new Blob([JSON.stringify(updatedNftJson)], { type: 'application/json' }));
-  
+
         const metadataResponse = await axios({
           method: 'post',
           url: 'https://api.pinata.cloud/pinning/pinFileToIPFS',
@@ -89,32 +96,40 @@ const DocApp = () => {
             'Content-Type': 'multipart/form-data',
           },
         });
-  
+
         const metadataCid = metadataResponse.data.IpfsHash;
         console.log('CID des métadonnées:', metadataCid);
-        setMetadataUrl(`https://ipfs.io/ipfs/${metadataCid}`); // Mettre à jour l'URL des métadonnées avec le nouveau CID
-  
-        // Mint the NFT
+        setMetadataUrl(`https://ipfs.io/ipfs/${metadataCid}`);
+
         const provider = new ethers.providers.Web3Provider(window.ethereum);
         await window.ethereum.enable();
         const signer = provider.getSigner();
-        const nftContractAddress = '0x296519f6c27664dd90c5d464471bce3ec310b969'
+        const nftContractAddress = '0x296519f6c27664DD90C5d464471BCE3ec310b969';
         const nftContract = new ethers.Contract(nftContractAddress, nftContractAbi, signer);
-  
+
         try {
           const url = `https://ipfs.io/ipfs/${metadataCid}`;
-          setMetadataUrl(url); // Mettre à jour l'URL des métadonnées
-          const account = await signer.getAddress(); // Obtenir l'adresse du compte de l'utilisateur actuel
-          const transaction = await nftContract.safeMint(account, metadataUrl); // Mint NFT pour le compte de l'utilisateur actuel en utilisant le nouveau CID
+          setMetadataUrl(url);
+          const account = await signer.getAddress();
+          const transaction = await nftContract.safeMint(account, url);
           await transaction.wait();
-          
-          // Récupérer le token ID du token minté
+
           const tokenID = await nftContract.tokenOfOwnerByIndex(account, 0);
           setTokenId(tokenID.toString());
-          
+
           console.log('NFT minted successfully!');
           console.log(`Metadata URL: ${metadataUrl}`);
           console.log(`Token ID: ${tokenID.toString()}`);
+
+          const newDocument = {
+            id: tokenID.toString(),
+            image: updatedNftJson.image,
+            metadataUrl: metadataUrl,
+            cid:cid
+          };
+          const updatedDocumentHistory = [...documentHistory, newDocument];
+          setDocumentHistory(updatedDocumentHistory);
+          localStorage.setItem('documentHistory', JSON.stringify(updatedDocumentHistory));
         } catch (error) {
           console.error('Error minting NFT:', error);
         }
@@ -124,6 +139,24 @@ const DocApp = () => {
       }
     }
   };
+
+  const handleLogout = () => {
+    setDocumentHistory([]);
+    localStorage.removeItem('documentHistory');
+    // Code pour la déconnexion
+  };
+
+  const handleReset = () => {
+    setDocumentHistory([]);
+    localStorage.removeItem('documentHistory');
+  };
+
+  const handleDownload = (event, cid) => {
+    event.preventDefault();
+    const url = `https://gateway.pinata.cloud/ipfs/${cid}`;
+    window.location.href = url;
+  };
+  
 
   return (
     <div className={styles.docAppContainer}>
@@ -140,6 +173,19 @@ const DocApp = () => {
       {ipfsHash && <p className={styles.ipfsHash}>Empreintes IPFS des fichiers envoyés : {ipfsHash}</p>}
       {metadataUrl && <p className={styles.metadataUrl}>URL des métadonnées : {metadataUrl}</p>}
       {tokenId && <p className={styles.tokenId}>Token ID du token minté : {tokenId}</p>}
+      <h2>Historique des documents envoyés :</h2>
+      <ul className={styles.documentHistory}>
+        {documentHistory.map((document) => (
+          <li key={document.id}>
+            <a href={document.metadataUrl} target="_blank" rel="noopener noreferrer">
+              <img src={document.image} alt="Aperçu du document" className={styles.documentThumbnail} />
+            </a>
+            <button onClick={(event) => handleDownload(event, document.cid)}>Télécharger</button>
+          </li>
+        ))}
+      </ul>
+      <button onClick={handleLogout}>Déconnexion</button>
+      <button onClick={handleReset}>Reset</button>
     </div>
   );
 };
