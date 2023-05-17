@@ -5,6 +5,24 @@ import styles from '../styles/DocApp.module.css';
 import nftContractAbi from '../back/NFTMinter';
 
 const DocApp = () => {
+  const getPreviewImageByExtension = (cid) => {
+    if (!cid) {
+      return;  // ou retournez une URL d'image par défaut
+    }
+    
+    // Extrayez l'extension du fichier de la fin de l'ID IPFS (cid)
+    const extension = cid.split('.').pop();
+  
+    switch (extension) {
+      case 'pdf':
+        return '/pdf-preview.png';
+      case 'mp3':
+        return '/mp3-preview.png';
+      default:
+        // Si l'extension n'est ni PDF ni MP3, retournez l'URL IPFS
+        return `https://ipfs.io/ipfs/${cid}`;
+    }
+  };
   const [nftJson, setNftJson] = useState({
     description: "votre nft mint par nos soins",
     external_url: "",
@@ -25,6 +43,18 @@ const DocApp = () => {
       },
     ],
   });
+  const getPreviewImage = (fileType) => {
+    switch (fileType) {
+      case 'pdf':
+        return '/pdf-preview.png';
+      case 'mp3':
+        return '/mp3-preview.png';
+      default:
+        return null;
+    }
+  };
+  
+  
   const [metadataUrl, setMetadataUrl] = useState('');
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [ipfsHash, setIpfsHash] = useState('');
@@ -53,6 +83,7 @@ const DocApp = () => {
   };
 
   const handleSubmit = async (e) => {
+    
     e.preventDefault();
 
     if (selectedFiles.length > 0) {
@@ -76,12 +107,15 @@ const DocApp = () => {
         const Url=`https://ipfs.io/ipfs/${cid}`;
         console.log('CID:', cid);
         setIpfsHash(cid);
+       
+      const previewImage = getPreviewImage(file.type); // Utilisez la fonction getPreviewImage que nous avons définie plus tôt pour obtenir l'image de prévisualisation correspondante
 
-        const updatedNftJson = {
-          ...nftJson,
-          image: `https://ipfs.io/ipfs/${cid}`,
-        };
-        setNftJson(updatedNftJson);
+      const updatedNftJson = {
+        ...nftJson,
+        image: previewImage || `https://ipfs.io/ipfs/${cid}`, // Si previewImage est disponible, utilisez-le. Sinon, utilisez l'URL IPFS
+      };
+      setNftJson(updatedNftJson);   
+       
 
         const metadataFormData = new FormData();
         metadataFormData.append('file', new Blob([JSON.stringify(updatedNftJson)], { type: 'application/json' }));
@@ -157,6 +191,7 @@ const DocApp = () => {
     window.location.href = url;
   };
   
+  
 
   return (
     <div className={styles.docAppContainer}>
@@ -175,15 +210,16 @@ const DocApp = () => {
       {tokenId && <p className={styles.tokenId}>Token ID du token minté : {tokenId}</p>}
       <h2>Historique des documents envoyés :</h2>
       <ul className={styles.documentHistory}>
-        {documentHistory.map((document) => (
-          <li key={document.id}>
-            <a href={document.metadataUrl} target="_blank" rel="noopener noreferrer">
-              <img src={document.image} alt="Aperçu du document" className={styles.documentThumbnail} />
-            </a>
-            <button onClick={(event) => handleDownload(event, document.cid)}>Télécharger</button>
-          </li>
-        ))}
-      </ul>
+  {documentHistory.map((document) => (
+    <li key={document.id}>
+      <a href={document.metadataUrl} target="_blank" rel="noopener noreferrer">
+        <img src={getPreviewImageByExtension(document.cid)} alt="Aperçu du document" className={styles.documentThumbnail} />
+      </a>
+      <button onClick={(event) => handleDownload(event, document.cid)}>Télécharger</button>
+    </li>
+  ))}
+</ul>
+
       <button onClick={handleLogout}>Déconnexion</button>
       <button onClick={handleReset}>Reset</button>
     </div>
