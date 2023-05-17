@@ -6,10 +6,10 @@ import nftContractAbi from '../back/NFTMinter';
 
 const DocApp = () => {
   const [nftJson, setNftJson] = useState({
-    description: "ratio",
+    description: "votre nft mint par nos soins",
     external_url: "",
     image: "",
-    name: "docz",
+    name: "document sensible",
     attributes: [
       {
         trait_type: "Colour",
@@ -29,6 +29,7 @@ const DocApp = () => {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [ipfsHash, setIpfsHash] = useState('');
   const [previewImage, setPreviewImage] = useState('');
+  const [tokenId, setTokenId] = useState(''); // Nouveau state pour le token ID
     
   const handleFileSelection = (event) => {
     const files = Array.from(event.target.files);
@@ -102,13 +103,18 @@ const DocApp = () => {
   
         try {
           const url = `https://ipfs.io/ipfs/${metadataCid}`;
-          setMetadataUrl(url); // Set the metadata URL state
-          const account = await signer.getAddress(); // Get current user's account
-          const transaction = await nftContract.safeMint(account, metadataUrl); // Mint NFT to the current user's account using the new CID
+          setMetadataUrl(url); // Mettre à jour l'URL des métadonnées
+          const account = await signer.getAddress(); // Obtenir l'adresse du compte de l'utilisateur actuel
+          const transaction = await nftContract.safeMint(account, metadataUrl); // Mint NFT pour le compte de l'utilisateur actuel en utilisant le nouveau CID
           await transaction.wait();
-        
+          
+          // Récupérer le token ID du token minté
+          const tokenID = await nftContract.tokenOfOwnerByIndex(account, 0);
+          setTokenId(tokenID.toString());
+          
           console.log('NFT minted successfully!');
           console.log(`Metadata URL: ${metadataUrl}`);
+          console.log(`Token ID: ${tokenID.toString()}`);
         } catch (error) {
           console.error('Error minting NFT:', error);
         }
@@ -133,6 +139,7 @@ const DocApp = () => {
       <button onClick={handleSubmit} className={styles.uploadButton}>Envoyer sur IPFS</button>
       {ipfsHash && <p className={styles.ipfsHash}>Empreintes IPFS des fichiers envoyés : {ipfsHash}</p>}
       {metadataUrl && <p className={styles.metadataUrl}>URL des métadonnées : {metadataUrl}</p>}
+      {tokenId && <p className={styles.tokenId}>Token ID du token minté : {tokenId}</p>}
     </div>
   );
 };
