@@ -25,4 +25,13 @@ Ce projet est une application web permettant de stocker des documents sur IPFS (
 npm install
 IPFS_API_KEY=<VOTRE_CLÉ_API_IPFS>
 ETH_PROVIDER_URL=<URL_DU_FOURNISSEUR_WEB3>
+Démonstration
+Une vidéo de démonstration de l'application est disponible à ce [lien](https://www.loom.com/share/119b86e24cbc4f3c9dcda68fe40df95a).
+Avertissement
+Veuillez noter que cette application est fournie à des fins éducatives et de démonstration. Elle n'est pas destinée à être utilisée en production et ne garantit pas la sécurité absolue des documents stockés. Utilisez-la à vos propres risques.
 
+Contribuer
+Les contributions à l'amélioration de cette application sont les bienvenues ! Si vous souhaitez apporter des modifications ou ajouter de nouvelles fonctionnalités, n'hésitez pas à ouvrir une issue ou à proposer une pull request.
+
+Licence
+Ce projet est sous licence MIT.
