@@ -1,0 +1,20 @@
+{
+    "description": "This NFT proves that I have deployed an NFT on Ethereum Goerli",
+    "external_url": "",
+    "image": "ipfs://QmXY5Jf82LemmpkXKUTqQwVcEpDhHkESxAQsKBv8e5DSEd",
+    "name": "Namzz",
+    "attributes": [
+      {
+        "trait_type": "Colour",
+        "value": "Mixed"
+      },
+      {
+        "trait_type": "Coolness",
+        "value": "A lot!"
+      },
+      {
+        "trait_type": "Token Standard",
+        "value": "ERC721"
+      }
+    ]
+  }

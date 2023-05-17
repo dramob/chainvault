@@ -1,6 +1,7 @@
 import "../styles/globals.css";
 import "@rainbow-me/rainbowkit/styles.css";
 import OurTeam from "../components/Team";
+
 import About from "../components/About";
 import DocApp from "../components/docApp";
 import { getDefaultWallets, RainbowKitProvider } from "@rainbow-me/rainbowkit";
@@ -48,19 +49,24 @@ export { WagmiConfig, RainbowKitProvider };
 function MyApp({ Component, pageProps }) {
 	return (
 		<WagmiConfig client={wagmiClient}>
+			
 			<RainbowKitProvider
 				modalSize="compact"
 				initialChain={process.env.NEXT_PUBLIC_DEFAULT_CHAIN}
 				chains={chains}
 			>
 				<MainLayout>
-				<section id="docapp" className={`section-with-border `}>
-            <Component {...pageProps} /> 
-          </section>
+			
+		  <section>
+			
+		  </section>
 					
 					<section id="docapp" className={`section-with-border `}>
             <DocApp />
           </section>
+		 
+			<section/>
+
 					<section id="about" className={`section-with-border `}>
             <About />
           </section>

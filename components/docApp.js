@@ -4,8 +4,28 @@ import { ethers } from 'ethers';
 import styles from '../styles/DocApp.module.css';
 import nftContractAbi from '../back/NFTMinter';
 
-
 const DocApp = () => {
+  const [nftJson, setNftJson] = useState({
+    description: "ratio",
+    external_url: "",
+    image: "",
+    name: "docz",
+    attributes: [
+      {
+        trait_type: "Colour",
+        value: "Mixed",
+      },
+      {
+        trait_type: "Coolness",
+        value: "A lot!",
+      },
+      {
+        trait_type: "Token Standard",
+        value: "ERC721",
+      },
+    ],
+  });
+  const [metadataUrl, setMetadataUrl] = useState('');
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [ipfsHash, setIpfsHash] = useState('');
   const [previewImage, setPreviewImage] = useState('');
@@ -25,12 +45,12 @@ const DocApp = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+  
     if (selectedFiles.length > 0) {
       const file = selectedFiles[0];
       const formData = new FormData();
       formData.append('file', file);
-
+  
       try {
         const response = await axios({
           method: 'post',
@@ -42,34 +62,63 @@ const DocApp = () => {
             'Content-Type': 'multipart/form-data',
           },
         });
-
+  
         const cid = response.data.IpfsHash;
         console.log('CID:', cid);
         setIpfsHash(cid);
-      } catch (error) {
-        alert('Error sending File to IPFS');
-        console.log(error);
-      }
         
+        // Mise à jour de nftJson pour inclure le nouveau CID de l'image
+        const updatedNftJson = {
+          ...nftJson,
+          image: `https://ipfs.io/ipfs/${cid}`,
+        };
+        setNftJson(updatedNftJson);
+
+        // Envoi du JSON de NFT à IPFS
+        const metadataFormData = new FormData();
+        metadataFormData.append('file', new Blob([JSON.stringify(updatedNftJson)], { type: 'application/json' }));
+  
+        const metadataResponse = await axios({
+          method: 'post',
+          url: 'https://api.pinata.cloud/pinning/pinFileToIPFS',
+          data: metadataFormData,
+          headers: {
+            pinata_api_key: '83e03c776352ab207242',
+            pinata_secret_api_key: '8fa6c34b657413959e239faa9309679cb57cd06e39343651679fa54f020127a4',
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+  
+        const metadataCid = metadataResponse.data.IpfsHash;
+        console.log('CID des métadonnées:', metadataCid);
+        setMetadataUrl(`https://ipfs.io/ipfs/${metadataCid}`); // Mettre à jour l'URL des métadonnées avec le nouveau CID
+  
         // Mint the NFT
         const provider = new ethers.providers.Web3Provider(window.ethereum);
         await window.ethereum.enable();
         const signer = provider.getSigner();
-        const nftContractAddress = '0xcf2DFf7D3c62B17D03891FaF9f70889315617319'; // Replace with your NFT contract address
+        const nftContractAddress = '0xe5a3dA109Df5578ab3f362072C71b388Ba83EB3d'; // Remplacez par l'adresse de votre contrat NFT
         const nftContract = new ethers.Contract(nftContractAddress, nftContractAbi, signer);
-
+  
         try {
+          const url = `https://ipfs.io/ipfs/${metadataCid}`;
+          setMetadataUrl(url); // Set the metadata URL state
           const account = await signer.getAddress(); // Get current user's account
-          const transaction = await nftContract.safeMint(account); // Mint NFT to the current user's account
+          const transaction = await nftContract.safeMint(account, metadataUrl); // Mint NFT to the current user's account using the new CID
           await transaction.wait();
-
+        
           console.log('NFT minted successfully!');
+          console.log(`Metadata URL: ${metadataUrl}`);
         } catch (error) {
           console.error('Error minting NFT:', error);
         }
-      
+      } catch (error) {
+        alert('Error sending File to IPFS');
+        console.log(error);
+      }
     }
   };
+
   return (
     <div className={styles.docAppContainer}>
       <h1>Stockage </h1>
@@ -83,6 +132,7 @@ const DocApp = () => {
       )}
       <button onClick={handleSubmit} className={styles.uploadButton}>Envoyer sur IPFS</button>
       {ipfsHash && <p className={styles.ipfsHash}>Empreintes IPFS des fichiers envoyés : {ipfsHash}</p>}
+      {metadataUrl && <p className={styles.metadataUrl}>URL des métadonnées : {metadataUrl}</p>}
     </div>
   );
 };
