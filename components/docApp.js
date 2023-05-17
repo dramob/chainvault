@@ -98,7 +98,7 @@ const DocApp = () => {
         const provider = new ethers.providers.Web3Provider(window.ethereum);
         await window.ethereum.enable();
         const signer = provider.getSigner();
-        const nftContractAddress = '0x296519f6c27664DD90C5d464471BCE3ec310b969'; // Remplacez par l'adresse de votre contrat NFT
+        const nftContractAddress = '0xe5a3dA109Df5578ab3f362072C71b388Ba83EB3d'; // Remplacez par l'adresse de votre contrat NFT
         const nftContract = new ethers.Contract(nftContractAddress, nftContractAbi, signer);
   
         try {
