@@ -461,4 +461,5 @@ const nftContractAbi =[
 		"type": "function"
 	}
 ]
+	
 export	 default nftContractAbi
